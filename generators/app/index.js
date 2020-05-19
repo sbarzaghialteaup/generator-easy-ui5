@@ -3,135 +3,123 @@ const Generator = require("yeoman-generator"),
     glob = require("glob");
 
 module.exports = class extends Generator {
-
     prompting() {
-        return this.prompt([{
-            type: "input",
-            name: "projectname",
-            message: "How do you want to name this project?",
-            validate: (s) => {
-                if (/^[a-zA-Z0-9_-]*$/g.test(s)) {
-                    return true;
-                }
-                return "Please use alpha numeric characters only for the project name.";
+        return this.prompt([
+            {
+                type: "input",
+                name: "namespace",
+                message: "Which namespace do you want to use?",
+                validate: (s) => {
+                    if (/^[a-zA-Z0-9_\.]*$/g.test(s)) {
+                        return true;
+                    }
+                    return "Please use alpha numeric characters and dots only for the namespace.";
+                },
+                default: "com.myorg",
             },
-            default: "myUI5App"
-        }, {
-            type: "input",
-            name: "namespace",
-            message: "Which namespace do you want to use?",
-            validate: (s) => {
-                if (/^[a-zA-Z0-9_\.]*$/g.test(s)) {
-                    return true;
-                }
-                return "Please use alpha numeric characters and dots only for the namespace.";
+            {
+                type: "input",
+                name: "appname",
+                message: "How do you want to name this app name?",
+                validate: (s) => {
+                    if (/^[a-zA-Z0-9_-]*$/g.test(s)) {
+                        return true;
+                    }
+                    return "Please use alpha numeric characters only for the project name.";
+                },
+                default: "myUI5App",
             },
-            default: "com.myorg"
-        }, {
-            type: "list",
-            name: "platform",
-            message: "On which platform would you like to host the application?",
-            choices: ["Static webserver",
-                "Application Router @ Cloud Foundry",
-                "Application Router @ SAP HANA XS Advanced",
-                "Cloud Foundry HTML5 Application Repository",
-                "Fiori Launchpad on Cloud Foundry"],
-            default: "Static webserver"
-        }, {
-            type: "list",
-            name: "viewtype",
-            message: "Which view type do you want to use?",
-            choices: ["XML", "JSON", "JS", "HTML"],
-            default: "XML"
-        }, {
-            type: "input",
-            name: "viewname",
-            message: "How do you want to name your main view?",
-            validate: (s) => {
-                if (/^[a-zA-Z0-9_\.]*$/g.test(s)) {
-                    return true;
-                }
-                return "Please use alpha numeric characters only for the view name.";
+            {
+                type: "input",
+                name: "entitynameplural",
+                message: "Entity name (plurals)?",
+                validate: (s) => {
+                    if (/^[a-zA-Z0-9_\.]*$/g.test(s)) {
+                        return true;
+                    }
+                    return "Please use alpha numeric characters only for the view name.";
+                },
+                default: "MainView",
             },
-            default: "MainView"
-        }, {
-            type: "list",
-            name: "ui5libs",
-            message: "Where should your UI5 libs be served from?",
-            choices: (props) => {
-                return (props.platform !== "Fiori Launchpad on Cloud Foundry") ?
-                    ["Content delivery network (OpenUI5)", "Content delivery network (SAPUI5)", "Local resources (OpenUI5)", "Local resources (SAPUI5)"] :
-                    ["Content delivery network (SAPUI5)"];
+            {
+                type: "input",
+                name: "entitynamesingolar",
+                message: "Entity name (singolar)?",
+                validate: (s) => {
+                    if (/^[a-zA-Z0-9_\.]*$/g.test(s)) {
+                        return true;
+                    }
+                    return "Please use alpha numeric characters only for the view name.";
+                },
+                default: "MainView",
             },
-            default: (props) => {
-                return (props.platform !== "Fiori Launchpad on Cloud Foundry") ?
-                    "Content delivery network (OpenUI5)" :
-                    "Content delivery network (SAPUI5)";
+            {
+                type: "confirm",
+                name: "newdir",
+                message: "Would you like to create a new directory for the project?",
+                default: true,
             },
-        }, {
-            type: "confirm",
-            name: "newdir",
-            message: "Would you like to create a new directory for the project?",
-            default: true
-        }]).then((answers) => {
+        ]).then((answers) => {
             if (answers.newdir) {
-                this.destinationRoot(`${answers.namespace}.${answers.projectname}`);
+                this.destinationRoot(`${answers.namespace}.${answers.appname}`);
             }
             this.config.set(answers);
         });
     }
 
     writing() {
-        const sViewName = this.config.get("viewname");
-        const sViewType = this.config.get("viewtype");
+        const sEntityNamePlural = this.config.get("entitynameplural");
 
         this.config.set("namespaceURI", this.config.get("namespace").split(".").join("/"));
 
         this.sourceRoot(path.join(__dirname, "templates"));
         glob.sync("**", {
             cwd: this.sourceRoot(),
-            nodir: true
+            nodir: true,
         }).forEach((file) => {
             const sOrigin = this.templatePath(file);
-            const sTarget = this.destinationPath(file.replace(/^_/, "").replace(/\/_/, "/").replace(/\$ViewType/, sViewType).replace(/\$ViewEnding/, sViewType.toLowerCase()).replace(/\$ViewName/, sViewName));
+            const sTarget = this.destinationPath(
+                file
+                    .replace(/\$EntityNamePlural/, sEntityNamePlural),
+            );
 
             this.fs.copyTpl(sOrigin, sTarget, this.config.getAll());
         });
 
-        const oSubGen = Object.assign({}, this.config.getAll());
-        oSubGen.isSubgeneratorCall = true;
-        oSubGen.cwd = this.destinationRoot();
+        // const oSubGen = Object.assign({}, this.config.getAll());
+        // oSubGen.isSubgeneratorCall = true;
+        // oSubGen.cwd = this.destinationRoot();
 
-        this.composeWith(require.resolve("../newview"), oSubGen);
-        const selectedPlatform = this.config.get("platform");
-        if (selectedPlatform !== "Static webserver") {
-            this.composeWith(require.resolve("../approuter"), oSubGen);
-            if (selectedPlatform === "Cloud Foundry HTML5 Application Repository") {
-                this.composeWith(require.resolve("../deployer"), oSubGen);
-            }
-            if (selectedPlatform === "Fiori Launchpad on Cloud Foundry") {
-                this.composeWith(require.resolve("../deployer"), oSubGen);
-                this.composeWith(require.resolve("../launchpad"), oSubGen);
-            }
-        }
+        // this.composeWith(require.resolve("../newview"), oSubGen);
+        // const selectedPlatform = this.config.get("platform");
+        // if (selectedPlatform !== "Static webserver") {
+        //     this.composeWith(require.resolve("../approuter"), oSubGen);
+        //     if (selectedPlatform === "Cloud Foundry HTML5 Application Repository") {
+        //         this.composeWith(require.resolve("../deployer"), oSubGen);
+        //     }
+        //     if (selectedPlatform === "Fiori Launchpad on Cloud Foundry") {
+        //         this.composeWith(require.resolve("../deployer"), oSubGen);
+        //         this.composeWith(require.resolve("../launchpad"), oSubGen);
+        //     }
+        // }
     }
 
     install() {
-        this.installDependencies({
-            bower: false,
-            npm: true
-        });
+        // this.installDependencies({
+        //     bower: false,
+        //     npm: true,
+        // });
     }
 
     end() {
-        this.spawnCommandSync("git", ["init", "--quiet"], {
-            cwd: this.destinationPath()
-        });
-        this.spawnCommandSync("git", ["add", "."], {
-            cwd: this.destinationPath()
-        });
-        this.spawnCommandSync("git", ["commit", "--quiet", "--allow-empty", "-m", "Initialize repository with easy-ui5"], {
-            cwd: this.destinationPath()
-        });
+        // this.spawnCommandSync("git", ["init", "--quiet"], {
+        //     cwd: this.destinationPath()
+        // });
+        // this.spawnCommandSync("git", ["add", "."], {
+        //     cwd: this.destinationPath()
+        // });
+        // this.spawnCommandSync("git", ["commit", "--quiet", "--allow-empty", "-m", "Initialize repository with easy-ui5"], {
+        //     cwd: this.destinationPath()
+        // });
     }
 };

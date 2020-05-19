@@ -1,53 +1,19 @@
 {
-  "name": "<%= projectname %>",
+  "name": "<%=appname%>",
   "version": "0.0.1",
   "engines": {
     "node": "12.X"
   },
   "scripts": {
-    "start": "ui5 serve -o index.html",
-    "serve": "ui5 serve",
-    "test": "run-s lint karma",
-    "karma-ci": "karma start karma-ci.conf.js",
-    "clearCoverage": "shx rm -rf coverage",
-    "karma": "run-s clearCoverage karma-ci",
-    "lint": "eslint .",
-<% if(platform.indexOf('Cloud Foundry') !== -1){ -%>
-    "build:mta": "mbt build",
-    "deploy:cf": "cross-var cf deploy mta_archives/<%= projectname %>_$npm_package_version.mtar",
-    "deploy": "run-s build:mta deploy:cf",
-<% } else if(platform === 'Application Router @ SAP HANA XS Advanced'){ -%>
-    "build:mta": "mbt build -p=xsa",
-    "deploy:xs": "cross-var xs deploy mta_archives/<%=projectname%>_$npm_package_version.mtar",
-    "deploy": "run-s build:mta deploy:xs",
-<% } if(platform === 'Cloud Foundry HTML5 Application Repository' || platform === 'Fiori Launchpad on Cloud Foundry'){ -%>
-    "build:ui": "ui5 build --clean-dest --include-task=generateManifestBundle --dest deployer/resources/webapp"
-<% }  else { -%>
-    "build:ui": "ui5 build <%=(ui5libs === 'Local resources (OpenUI5)' || ui5libs === 'Local resources (SAPUI5)') ? '--a':  '--clean-dest --dest approuter/webapp' %> "
-<% }  -%>
+    "build": "ui5 build --clean-dest --include-task=generateManifestBundle generateCachebusterInfo"
   },
   "devDependencies": {
-<% if(platform !== 'Static webserver'){ -%>
-    "cross-var": "^1.1.0",
-    "mbt": "1.0.14",
-    "ui5-middleware-cfdestination": "^0.1.8",
-<% } -%>
-    "shx": "^0.3.2",
     "@ui5/cli": "^2.2.0",
-    "ui5-middleware-livereload": "^0.2.0",
-    "karma": "^5.0.4",
-    "karma-chrome-launcher": "^3.1.0",
-    "karma-coverage": "^2.0.2",
-    "karma-ui5": "^2.1.0",
-    "npm-run-all": "^4.1.5",
-    "eslint": "^6.8.0"
+    "@sap/ui5-builder-webide-extension": "1.0.x"
   },
   "ui5": {
     "dependencies": [
-<% if(platform !== 'Static webserver'){ -%>
-      "ui5-middleware-cfdestination",
-<% } -%>
-      "ui5-middleware-livereload"
+      "@sap/ui5-builder-webide-extension"
     ]
   }
 }
