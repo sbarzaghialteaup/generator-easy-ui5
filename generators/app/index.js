@@ -61,7 +61,7 @@ module.exports = class extends Generator {
             },
         ]).then((answers) => {
             if (answers.newdir) {
-                this.destinationRoot(`${answers.namespace}.${answers.appname}`);
+                this.destinationRoot(`app/${answers.namespace}.${answers.appname}`);
             }
             this.config.set(answers);
         });
@@ -87,8 +87,10 @@ module.exports = class extends Generator {
 
         const stringifyObject = require("stringify-object");
 
+        this.destinationRoot("..");
+
         let window = [];
-        const configFile = this.readDestination("../flpConfig.js");
+        const configFile = this.readDestination("flpConfig.js");
         const config = eval(configFile);
 
         config.applications[`${entityNamePlural}-manage`] = {
@@ -98,8 +100,8 @@ module.exports = class extends Generator {
             additionalInformation: `SAPUI5.Component=${namespace}.${appname}`,
             applicationType: "URL",
             url: `./${namespace}.${appname}/webapp`,
-            navigationMode: "embedded"
-        }
+            navigationMode: "embedded",
+        };
 
         let configString =
             'window["sap-ushell-config"] = ' +
@@ -108,7 +110,7 @@ module.exports = class extends Generator {
                 singleQuotes: false,
             });
 
-        this.writeDestination("../flpConfig.js", configString);
+        this.writeDestination("flpConfig.js", configString);
 
         this.fs.append(this.destinationPath("../index.cds"), `using from './${namespace}.${appname}/fiori-${appname}-UI';`);
 
