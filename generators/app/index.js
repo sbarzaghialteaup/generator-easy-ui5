@@ -68,9 +68,11 @@ module.exports = class extends Generator {
     }
 
     writing() {
-        const sEntityNamePlural = this.config.get("entitynameplural");
+        const namespace = this.config.get("namespace");
+        const appname = this.config.get("appname");
+        const entityNamePlural = this.config.get("entitynameplural");
 
-        this.config.set("namespaceURI", this.config.get("namespace").split(".").join("/"));
+        this.config.set("namespaceURI", namespace.split(".").join("/"));
 
         this.sourceRoot(path.join(__dirname, "templates"));
         glob.sync("**", {
@@ -78,13 +80,37 @@ module.exports = class extends Generator {
             nodir: true,
         }).forEach((file) => {
             const sOrigin = this.templatePath(file);
-            const sTarget = this.destinationPath(
-                file
-                    .replace(/\$EntityNamePlural/, sEntityNamePlural),
-            );
+            const sTarget = this.destinationPath(file.replace(/\$appname/, appname));
 
             this.fs.copyTpl(sOrigin, sTarget, this.config.getAll());
         });
+
+        const stringifyObject = require("stringify-object");
+
+        let window = [];
+        const configFile = this.readDestination("../flpConfig.js");
+        const config = eval(configFile);
+
+        config.applications[`${entityNamePlural}-manage`] = {
+            title: `Manage ${entityNamePlural}`,
+            description: `${entityNamePlural} Maintenance`,
+            icon: "sap-icon://add",
+            additionalInformation: `SAPUI5.Component=${namespace}.${appname}`,
+            applicationType: "URL",
+            url: `./${namespace}.${appname}/webapp`,
+            navigationMode: "embedded"
+        }
+
+        let configString =
+            'window["sap-ushell-config"] = ' +
+            stringifyObject(config, {
+                indent: "    ",
+                singleQuotes: false,
+            });
+
+        this.writeDestination("../flpConfig.js", configString);
+
+        this.fs.append(this.destinationPath("../index.cds"), `using from './${namespace}.${appname}/fiori-${appname}-UI';`);
 
         // const oSubGen = Object.assign({}, this.config.getAll());
         // oSubGen.isSubgeneratorCall = true;
@@ -105,10 +131,10 @@ module.exports = class extends Generator {
     }
 
     install() {
-        // this.installDependencies({
-        //     bower: false,
-        //     npm: true,
-        // });
+        this.installDependencies({
+            bower: false,
+            npm: true,
+        });
     }
 
     end() {
