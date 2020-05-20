@@ -1,7 +1,7 @@
 const Generator = require("yeoman-generator"),
+    yaml = require("yaml"),
     path = require("path"),
     glob = require("glob");
-
 module.exports = class extends Generator {
     prompting() {
         return this.prompt([
@@ -15,7 +15,7 @@ module.exports = class extends Generator {
                     }
                     return "Please use alpha numeric characters and dots only for the namespace.";
                 },
-                default: "com.myorg",
+                default: "com.alteaup.solutions",
             },
             {
                 type: "input",
@@ -87,6 +87,7 @@ module.exports = class extends Generator {
 
         const stringifyObject = require("stringify-object");
 
+        // flpConfig per launchpad sandbox
         this.destinationRoot("..");
 
         let window = [];
@@ -112,6 +113,7 @@ module.exports = class extends Generator {
 
         this.writeDestination("flpConfig.js", configString);
 
+        // Index.cds per annotations fiori elements
         this.fs.append(
             this.destinationPath("index.cds"),
             `using from './${namespace}.${appname}/fiori-${appname}-UI';`,
@@ -119,6 +121,7 @@ module.exports = class extends Generator {
 
         this.destinationRoot("../");
 
+        // CommonDataModel per launchpad cloud-foundry
         const CommonDataModel = this.readDestinationJSON(
             "cloud-foundry/portal-deployer/portal-site/CommonDataModel.json",
         );
@@ -134,6 +137,40 @@ module.exports = class extends Generator {
             CommonDataModel,
         );
 
+        // MTA.yml
+        const filePath = process.cwd() + "/mta.yaml";
+        const mta = yaml.parse(this.fs.read(filePath));
+
+        const html_deployer = mta.modules.find(
+            (module) => module.name === "cap-template-html-deployer",
+        );
+
+        html_deployer["build-parameters"].requires.push({
+            name: `ui_${appname}`,
+            artifacts: ["./*"],
+            "target-path": `resources/${appname}`
+        });
+
+        mta.modules.push({
+            name: `ui_${appname}`,
+            type: "html5",
+            path: `app/${namespace}.${appname}`,
+            "build-parameters": {
+                builder: "custom",
+                commands: [
+                    'npm run build'
+                ],
+                "supported-platforms": [],
+                "build-result": "dist"
+            }
+        });
+
+        this.fs.write(filePath, yaml.stringify(mta));
+
+        !this.options.isSubgeneratorCall &&
+            this.log("Updated the mta.yaml file with the new resources.");
+
+        // Ritorna alla folder principale per poi lanciare npm install
         this.destinationRoot(`app/${namespace}.${appname}`);
 
         // const oSubGen = Object.assign({}, this.config.getAll());
