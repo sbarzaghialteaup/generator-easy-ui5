@@ -112,7 +112,29 @@ module.exports = class extends Generator {
 
         this.writeDestination("flpConfig.js", configString);
 
-        this.fs.append(this.destinationPath("../index.cds"), `using from './${namespace}.${appname}/fiori-${appname}-UI';`);
+        this.fs.append(
+            this.destinationPath("index.cds"),
+            `using from './${namespace}.${appname}/fiori-${appname}-UI';`,
+        );
+
+        this.destinationRoot("../");
+
+        const CommonDataModel = this.readDestinationJSON(
+            "cloud-foundry/portal-deployer/portal-site/CommonDataModel.json",
+        );
+
+        CommonDataModel.payload.groups[0].payload.viz.push({
+            id: `${appname}`,
+            appId: `${namespace}.${appname}`,
+            vizId: `${entityNamePlural}-manage`,
+        });
+
+        this.writeDestinationJSON(
+            "cloud-foundry/portal-deployer/portal-site/CommonDataModel.json",
+            CommonDataModel,
+        );
+
+        this.destinationRoot(`app/${namespace}.${appname}`);
 
         // const oSubGen = Object.assign({}, this.config.getAll());
         // oSubGen.isSubgeneratorCall = true;
