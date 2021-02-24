@@ -10,10 +10,10 @@ module.exports = class extends Generator {
                 name: "namespace",
                 message: "Which namespace do you want to use?",
                 validate: (s) => {
-                    if (/^[a-zA-Z0-9_\.]*$/g.test(s)) {
+                    if (/^[a-z0-9_\.]*$/g.test(s)) {
                         return true;
                     }
-                    return "Please use alpha numeric characters and dots only for the namespace.";
+                    return "Please use alpha numeric characters in lower case and dots only for the namespace.";
                 },
                 default: "cloudcoldchain",
             },
@@ -22,12 +22,12 @@ module.exports = class extends Generator {
                 name: "appname",
                 message: "How do you want to name this app name?",
                 validate: (s) => {
-                    if (/^[a-zA-Z0-9_-]*$/g.test(s)) {
+                    if (/^[a-z0-9_-]*$/g.test(s)) {
                         return true;
                     }
-                    return "Please use alpha numeric characters only for the project name.";
+                    return "Please use alpha numeric characters in lower case only for the project name.";
                 },
-                default: "myUI5App",
+                default: "customers",
             },
             {
                 type: "input",
@@ -39,7 +39,7 @@ module.exports = class extends Generator {
                     }
                     return "Please use alpha numeric characters only for the view name.";
                 },
-                default: "MainView",
+                default: "Customers",
             },
             {
                 type: "input",
@@ -51,7 +51,7 @@ module.exports = class extends Generator {
                     }
                     return "Please use alpha numeric characters only for the view name.";
                 },
-                default: "MainView",
+                default: "Customer",
             },
             {
                 type: "confirm",
